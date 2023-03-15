@@ -62,6 +62,7 @@ sendPrivPic.addEventListener("change", (event) => {
 let display = document.querySelector('div#display');
 let modal = document.querySelector('div.modal-md');
 let users = document.querySelector('div#user');
+let taleauScore = document.querySelector(".container2")
 
 /*
  * Emits an event to the server
@@ -142,119 +143,23 @@ socketClient.on('<message', (content) => {
   display.prepend(mes);
 });
 
-socketClient.on('<private', (content) => {
-  const event = new Date();
-  let mes = document.createElement('div');
-  mes.setAttribute('id','message');
-  let sender = document.createElement('span');
-  sender.setAttribute('class','bg-success chip');
-  sender.textContent = content["sender"];
-  let date = document.createElement('date');
-  const options = { year: 'numeric', month: 'numeric', day: 'numeric' ,hour: 'numeric', minute: 'numeric', second: 'numeric' };
-  date.style.color = 'grey';
-  date.style.fontSize = 'smaller';
-  date.textContent = event.toLocaleDateString('fr-FR',options);
-  let p = document.createElement('p');
-  p.textContent = content.text;
-  mes.appendChild(sender);
-  mes.appendChild(date);
-  mes.appendChild(p);
-  display.prepend(mes);
-});
-
-socketClient.on('<image', (content) => {
-  const event = new Date();
-  let mes = document.createElement('div');
-  mes.setAttribute('id','message');
-  let sender = document.createElement('span');
-  sender.setAttribute('class','bg-primary chip');
-  sender.textContent = content["sender"];
-  let date = document.createElement('date');
-  const options = { year: 'numeric', month: 'numeric', day: 'numeric' ,hour: 'numeric', minute: 'numeric', second: 'numeric' };
-  date.style.color = 'grey';
-  date.style.fontSize = 'smaller';
-  date.textContent = event.toLocaleDateString('fr-FR',options);
-  let img = document.createElement('img');
-  img.classList.add('img-responsive');
-  img.src = content.image;
-  mes.appendChild(sender);
-  mes.appendChild(date);
-  mes.appendChild(img);
-  display.prepend(mes);
-});
-
-socketClient.on('<private-image', (content) => {
-  const event = new Date();
-  let mes = document.createElement('div');
-  mes.setAttribute('id','message');
-  let sender = document.createElement('span');
-  sender.setAttribute('class','bg-success chip');
-  sender.textContent = content["sender"];
-  let date = document.createElement('date');
-  const options = { year: 'numeric', month: 'numeric', day: 'numeric' ,hour: 'numeric', minute: 'numeric', second: 'numeric' };
-  date.style.color = 'grey';
-  date.style.fontSize = 'smaller';
-  date.textContent = event.toLocaleDateString('fr-FR',options);
-  let img = document.createElement('img');
-  img.classList.add('img-responsive');
-  img.src = content.image;
-  mes.appendChild(sender);
-  mes.appendChild(date);
-  mes.appendChild(img);
-  display.prepend(mes);
-});
 
 socketClient.on('<users',(liste) =>{
-  let dom = users.querySelector('thead');
-  dom.innerHTML = "<tr><th>"+liste.length+" utilisateurs connecté </th></tr>";;
-  let tbody = users.querySelector('tbody');
-  tbody.innerHTML = '';
-  liste.map((user,i) => {
-    var td = document.createElement("td");
-    td.setAttribute('id',i);
-    var name = document.createElement('span');
-    name.setAttribute('class','form-inline');
-    name.innerHTML = user.name;
-    name.onclick = function () {
-      event.preventDefault();
-      modal.querySelector('#destinataire').innerHTML= user.name;
-      modal.classList.toggle('active');
-    }
-    var label = document.createElement('label');
-    label.classList.toggle('form-switch');
-    var input = document.createElement('input');
-    input.setAttribute("type", "checkbox");
-    if(user.accept===true)
-    {
-      input.checked = true;
-    }else{
-      name.style.color = 'grey';
-    }
-    input.addEventListener("change", (event) => {
-      if(event.target.checked===true)
-      {
-        event.target.parentNode.querySelector('span').style.color = null;
-        socketClient.emit('>accept',event.target.parentNode.querySelector('span').innerHTML);
-      }
-      else
-      {
-        event.target.parentNode.querySelector('span').style.color = 'grey';
-        socketClient.emit('>block',event.target.parentNode.querySelector('span').innerHTML);
-      }
-    });
-    var i = document.createElement('i');
-    i.classList.toggle('form-icon');
-    name.disabled = true;
-    label.appendChild(input);
-    label.appendChild(i);
-    label.appendChild(name);
-    td.appendChild(label);
-    var ligne = document.createElement('tr');
-    ligne.appendChild(td);
-    tbody.appendChild(ligne);
-  });
-  let close = document.querySelector("a.btn-clear");
-  close.addEventListener("click", () => {
-    modal.classList.remove('active');
-  });
+  console.log(liste)
+  let playerBoard = document.querySelector(".player")
+  let player1 = playerBoard.querySelector(".player-information1")
+  let player2 = playerBoard.querySelector(".player-information2")
+  player1.querySelector(".nom").innerHTML=liste[0]?.name??""
+  player2.querySelector(".nom").innerHTML=liste[1]?.name??""
 });
+
+socketClient.on('<play',() =>{
+  console.log("play")
+  taleauScore.querySelector("tbody").innerHTML=""
+});
+
+socketClient.on('<urTurn',() =>{
+  console.log("myturn")
+  document.querySelector(".button-roll").classList.remove("d-none")
+});
+

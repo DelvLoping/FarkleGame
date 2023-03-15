@@ -122,62 +122,7 @@ class FarkleGame {
             'scoring_dice': scoring_dice_value_occurrence,
             'non_scoring_dice': non_scoring_dice_from_std
         };
-    }
-
-    game_turn(is_interactive = true) {
-        // turn start with the full set of dices
-        let remaining_dice_to_roll = this.DEFAULT_DICES_NB;
-        let roll_again = true;
-        
-        let turn_score = 0;
-        while (roll_again) {
-            // generate the dice roll and compute the scoring
-            let dice_value_occurrence = this.roll_dice_set(remaining_dice_to_roll);
-            let roll_score = this.analyse_score(dice_value_occurrence);
-            remaining_dice_to_roll = sum(roll_score['non_scoring_dice']);
-            
-            if (roll_score['score'] == 0) {
-            // lost roll
-            
-            console.log('\n-->', 'got zero point ', turn_score, 'lost points\n');
-            
-            roll_again = false;
-            turn_score = 0;
-            } else {
-            // scoring roll
-            
-            turn_score += roll_score['score'];
-            
-            // In case of scoring roll and no remaining dice to roll the player can roll again the full set of dices
-                if (remaining_dice_to_roll == 0) {
-                    remaining_dice_to_roll = this.DEFAULT_DICES_NB;
-                    console.log('-->Full Roll');
-                }
-            
-                console.log('Roll Score=', roll_score['score'], 'potential turn score=', turn_score, 'remaining dice=', remaining_dice_to_roll);
-            
-                // choice to roll again or stop and take roll score
-                let stop_turn =false
-                if (is_interactive) {
-                    // interactive decision for real game
-                    stop_turn = prompt("Do you want to roll this dice ? [y/n] ") == "n";
-                } else {
-                    // random decision for game simulation (50/50)
-                    stop_turn= (Math.floor(Math.random() * 100) % 2) == 0;
-                }
-                if (stop_turn) {
-                    // stop turn and take roll score
-            
-                    console.log('\n-->', 'Scoring turn with', turn_score, 'points\n');
-            
-                    roll_again = false;
-                }
-            }
-        }
-        return turn_score;
-    }
-
-    
+    }  
 }
 
 function sum(array)
@@ -238,6 +183,9 @@ let Game=new FarkleGame();
 socketServer.on('connection', (socket) => {
   console.log('A new user is connected...');
 
+  
+
+
   /*
    * Registers an event listener
    *
@@ -260,25 +208,24 @@ socketServer.on('connection', (socket) => {
         if(Object.keys(registeredSockets).length<2)
         {
           registeredSockets[nickname] = socket;
-          for(let key in getAllNicknames())
-          {
-            acceptMessagesBy[getAllNicknames()[key]] = getAllNicknames();
-          }
-          console.log(nickname + ' est connecté');
+
+          // console.log(nickname + ' est connecté');
           socket.emit('<connected', nickname);
-          socket.broadcast.emit('<notification', nickname + " à rejoins le chat");
-          let block = [];
-          for(let key in acceptMessagesBy)
+          // socket.broadcast.emit('<notification', nickname + " à rejoins le chat");
+          let list = [];
+          for(let key in registeredSockets)
           {
-            if(acceptMessagesBy[key].includes(getNicknameBy(socket)))
-            {
-              block.push({name : key, accept: true});
-            }
-            else{
-              block.push({name : key, accept: false});
-            }
+            list.push({name : getNicknameBy(registeredSockets[key])});
           }
-          socketServer.emit('<users', block);
+          socketServer.emit('<users', list);
+          console.log(Object.keys(registeredSockets).length)
+          if(Object.keys(registeredSockets).length==2)
+          {
+            console.log("il y a 2 joeur on lance le jeu")
+            socket.broadcast.emit('<play' );
+            socket.emit('<play' );
+            socket.to(registeredSockets[list[0].name].id).emit('<urTurn');
+          }
         }else {
           socket.emit('<error', 'room full');
         }
@@ -289,68 +236,19 @@ socketServer.on('connection', (socket) => {
   });
 
   socket.on('>message',(content) =>{
-    let nickname = getNicknameBy(socket);
-    acceptMessagesBy[nickname].forEach(i => registeredSockets[i].emit('<message',{sender : nickname, text : encode(content, { special: { l: true } })}));
-  });
-
-  socket.on('>private',(content) =>{
-    let target = registeredSockets[content['recipient']];
-    let nickname = getNicknameBy(socket);
-    if(acceptMessagesBy[nickname].includes(getNicknameBy(target)))
-    {
-      socket.emit('<private',{sender : getNicknameBy(socket), text : encode(content['text'], { special: { l: true } })});
-      target.emit('<private',{sender : getNicknameBy(socket), text : encode(content['text'], { special: { l: true } })});
-    }
-  });
-
-  socket.on('>image',(content) =>{
-    let nickname = getNicknameBy(socket);
-    acceptMessagesBy[nickname].forEach(i => registeredSockets[i].emit('<image', { sender: getNicknameBy(socket), image: content }));
-  });
-
-  socket.on('>private-image',(content) =>{
-    let target = registeredSockets[content['recipient']];
-    let nickname = getNicknameBy(socket);
-    if(acceptMessagesBy[nickname].includes(getNicknameBy(target)))
-    {
-      socket.emit('<private-image', { sender: getNicknameBy(socket), image: content['image'] });
-      target.emit('<private-image', { sender: getNicknameBy(socket), image: content['image'] });
-    }
-  });
-
-  socket.on('>accept',(nickname)=>{
-    if(!(acceptMessagesBy[nickname].includes(getNicknameBy(socket))))
-    {
-      console.log(acceptMessagesBy);
-      acceptMessagesBy[nickname].push(getNicknameBy(socket));
-      console.log(acceptMessagesBy);
-    }
-  });
-
-  socket.on('>block',(nickname)=>{
-    console.log(acceptMessagesBy);
-    acceptMessagesBy[nickname] = acceptMessagesBy[nickname].filter(v => v !== getNicknameBy(socket));
-    console.log(acceptMessagesBy);
   });
 
 
   socket.on('disconnect', () => {
     if(getNicknameBy(socket)!==undefined){
-      socket.broadcast.emit('<notification', getNicknameBy(socket) + " à quitté le chat");
       console.log(getNicknameBy(socket) + ' est déconnecté');
       delete registeredSockets[getNicknameBy(socket)];
-      let block = [];
-      for(let key in acceptMessagesBy)
+      let list = [];
+      for(let key in registeredSockets)
       {
-        if(acceptMessagesBy[key].includes(getNicknameBy(socket)))
-        {
-          block.push({name : key, accept: true});
-        }
-        else{
-          block.push({name : key, accept: false});
-        }
+        list.push({name : getNicknameBy(registeredSockets[key])});
       }
-      socketServer.emit('<users', block);
+      socket.broadcast.emit('<users',list);
     }
   });
 });
