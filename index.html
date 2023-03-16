@@ -153,48 +153,26 @@
       
       <br>
       <div class="die m-2">
-          <img id="dice1" src="./img/Vectorexit1.png" alt="">
-          <img id="dice2" src="./img/Vectorexit2.png" alt="">
-          <img id="dice3" src="./img/Vectorexit3.png" alt="">
-          <img id="dice4" src="./img/Vectorexit4.png" alt="">
-          <img id="dice5" src="./img/Vectorexit5.png" alt="">
+          <img class="dice" id="dice1" src="./img/Vectorexit1.png" alt="">
+          <img class="dice" id="dice2" src="./img/Vectorexit2.png" alt="">
+          <img class="dice" id="dice3" src="./img/Vectorexit3.png" alt="">
+          <img class="dice" id="dice4" src="./img/Vectorexit4.png" alt="">
+          <img class="dice" id="dice5" src="./img/Vectorexit5.png" alt="">
       </div>
       <br>
       <div class="card">
           <div class="card-zone-distribution">
-              <div class="card-zone"></div>
-          
+              <div class="card-zone" id="select-dice1"></div>
+              <div class="card-zone" id="select-dice2"></div> 
+              <div class="card-zone" id="select-dice3"></div>
+              <div class="card-zone" id="select-dice4"></div>
+              <div class="card-zone" id="select-dice5"></div>
           </div>
-          <div class="card-zone-distribution">
-              <div class="card-zone"></div>
-              <div class="card-zone"></div> 
-          </div>
-          <div class="card-zone-distribution">
-              <div class="card-zone"></div>
-              <div class="card-zone"></div> 
-              <div class="card-zone"></div>
-          </div>
-          <div class="card-zone-distribution">
-              <div class="card-zone"></div>
-              <div class="card-zone"></div> 
-              <div class="card-zone"></div>
-              <div class="card-zone"></div>
-          </div>
-          <div class="card-zone-distribution">
-              <div class="card-zone"></div>
-              <div class="card-zone"></div> 
-              <div class="card-zone"></div>
-              <div class="card-zone"></div>
-              <div class="card-zone"></div>
-          </div>
-          <div class="card-zone-distribution">
-              <div class="card-zone"></div>
-              <div class="card-zone"></div> 
-              <div class="card-zone"></div>
-              <div class="card-zone"></div>
-              <div class="card-zone"></div>
-              <div class="card-zone"></div>
-          </div>
+      </div>
+      <div class="center">
+        <div class="container col-2 m-2" id="scoreTemp">
+          <div class="toast text-bold text-dark bg-secondary center h2 d-none">0</div>
+        </div>
       </div>
       <div class="columns m-2">
           <button class="btn button-collect d-none col-2 col-mr-auto">COLLECTER</button>

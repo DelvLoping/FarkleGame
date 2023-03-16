@@ -62,7 +62,7 @@ body{
     justify-content:flex-start;
     align-items:flex-start;
     gap: 15px;
-    padding-bottom: 15px;
+    padding: 15px;
 }
 
 .card-zone{
@@ -111,6 +111,13 @@ body{
     display: flex !important;
     justify-content: center;
 }
+.dice{
+    height: 50px;
+}
+.selected{
+    border: 2px solid #32b643;
+    border-radius: 8px 8px 8px 8px;
+}
 @media (min-width:991px){
     .container-player{
         flex-direction: row;
@@ -122,9 +129,7 @@ body{
         left: 20%;
     }
     .die{
-        justify-content: flex-end;
-        width: 68%;
-        padding: 0 !important;
+        justify-content: center;
     }
 
     .player{

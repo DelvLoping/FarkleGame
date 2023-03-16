@@ -23,7 +23,9 @@ let playerBoard = document.querySelector(".player")
 let player1 = playerBoard.querySelector(".player-information1")
 let player2 = playerBoard.querySelector(".player-information2")
 let infoGame = document.querySelector("#infoGame").querySelector(".toast")
-
+let currentPlayer = ''
+let selectDiceBoard = document.querySelector(".card-zone-distribution")
+let scoreTemp = document.querySelector("#scoreTemp").querySelector(".toast")
 
 ////////////////////////////  Fonctions  //////////////////////////////
 
@@ -63,6 +65,7 @@ async function asyncRollDice(nbTurn,dice){
 
 function setDiceNumber(idDice,number){
   dices[idDice].src=`./img/Vectorexit${number}.png`
+  dices[idDice].setAttribute("value", number)
 }
 
 function setDicesFromRoll(roll){
@@ -99,6 +102,14 @@ function showButton(){
   document.querySelector(".button-roll").classList.remove("d-none")
 }
 
+function hideScoreTemp(){
+  scoreTemp.classList.add("d-none")
+}
+
+function showScoreTemp(){
+  scoreTemp.classList.remove("d-none")
+}
+
 function changeButtonState(bool){
   if(bool){
     showButton()
@@ -106,6 +117,43 @@ function changeButtonState(bool){
     hideButton()
   }
 }
+
+function changeScoreTempState(bool){
+  if(bool){
+    showScoreTemp()
+  }else{
+    hideScoreTemp()
+  }
+}
+
+function changeLayoutOnTurn(bool){
+  changeButtonState(bool)
+  changeScoreTempState(bool)
+}
+
+function addDiceToSelectBoard(dice){
+  let index=0
+  while (index<selectDiceBoard.children.length){
+    console.log(selectDiceBoard.children[index])
+    if(selectDiceBoard.children[index].innerHTML=="")
+    {
+      selectDiceBoard.children[index].appendChild(dice)
+      index=selectDiceBoard.children.length
+    }else{
+      index+=1
+    }
+  }
+
+}
+
+function removeDiceToSelectBoard(dice){
+  dice.classList.remove('selected')
+  selectDiceBoard.querySelector(`#${dice.id}`).parentNode.innerHTML = ''
+
+}
+
+
+
 ////////////////////////////  Ecouteur du client //////////////////////////////
 
 let signin= document.forms.namedItem('signin');
@@ -122,7 +170,22 @@ rolltBtn.addEventListener('click',(event) => {
   socketClient.emit('>roll',nickname)
 });
 
-
+dices.map((dice)=>{
+  dice.addEventListener('click',(event) => {
+    dice.classList.toggle('selected')
+    if(dice.classList.contains('selected'))
+    {
+      let diceClone =dice.cloneNode(true)
+      diceClone.addEventListener('click',(event) => {
+        removeDiceToSelectBoard(dice)
+      });
+      addDiceToSelectBoard(diceClone)
+    }else{
+      removeDiceToSelectBoard(dice)
+    }
+  
+  });
+});
 
 
 ////////////////////////////  Ecouteur de socket //////////////////////////////
@@ -169,8 +232,8 @@ socketClient.on('<error',(nickname) =>{
   divError.classList.remove('hidden');
 });
 
-socketClient.on('<roll',(roll) =>{
-  console.log(roll)
+socketClient.on('<roll',(roll,score) =>{
+  console.log(roll,score)
   let promises=[]
     dices.map((dice)=>{
       let random =generateRandomInt(6,10)
@@ -180,27 +243,16 @@ socketClient.on('<roll',(roll) =>{
       dices=res
       loadButton(false)
       setDicesFromRoll(roll)
+      // playerBoard.querySelector(`#${currentPlayer.name}`).querySelector(".score").textContent=score.score
+      scoreTemp.textContent=score.score
+      let helperText='Vos possibilités : '
+      score.scoring_dice.map((dice,index)=>{
+        if(dice>0){
+          helperText+=new Array(dice).fill(index+1).join('-')+" "
+        }
+      })
+      infoGame.textContent=helperText
     })
-});
-
-socketClient.on('<message', (content) => {
-  const event = new Date();
-  let mes = document.createElement('div');
-  mes.setAttribute('id','message');
-  let sender = document.createElement('span');
-  sender.setAttribute('class','bg-primary chip');
-  sender.textContent = content["sender"];
-  let date = document.createElement('date');
-  const options = { year: 'numeric', month: 'numeric', day: 'numeric' ,hour: 'numeric', minute: 'numeric', second: 'numeric' };
-  date.style.color = 'grey';
-  date.style.fontSize = 'smaller';
-  date.textContent = event.toLocaleDateString('fr-FR',options);
-  let p = document.createElement('p');
-  p.textContent = content.text;
-  mes.appendChild(sender);
-  mes.appendChild(date);
-  mes.appendChild(p);
-  display.prepend(mes);
 });
 
 
@@ -225,14 +277,16 @@ socketClient.on('<play',() =>{
 socketClient.on('<Turn',(players) =>{
   console.log(players)
   let id=players.findIndex(obj => obj.name === nickname);
+  let idCurrent = players.findIndex(obj => obj.current );
   changeCurrentPlayer(players)
-  changeButtonState(players[id].current)
+  currentPlayer=players[idCurrent]
+  changeLayoutOnTurn(players[id].current)
   if(players[id].current){
     console.log("myturn")
     infoGame.textContent="C'est votre tour"
   }else{
     console.log(players[1-id].name+" turn")
-    infoGame.textContent=`Tour de ${players[id].name}`
+    infoGame.textContent=`Tour de ${players[1-id].name}`
   }
   
 });

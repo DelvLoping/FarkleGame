@@ -148,6 +148,7 @@ let socketServer = require('socket.io')(http);
 let registeredSockets = {};
 let acceptMessagesBy = {};
 const Game=new FarkleGame();
+let scoreHistory={}
 
 
 ////////////////////////////   socket/serveur   //////////////////////////////
@@ -197,7 +198,7 @@ socketServer.on('connection', (socket) => {
         if(Object.keys(registeredSockets).length<2)
         {
           registeredSockets[nickname] = socket;
-
+          scoreHistory[nickname] = {};
           // console.log(nickname + ' est connecté');
           socket.emit('<connected', nickname);
           // socket.broadcast.emit('<notification', nickname + " à rejoins le chat");
@@ -233,8 +234,9 @@ socketServer.on('connection', (socket) => {
 
   socket.on('>roll',(player) =>{
     let roll=Game.roll_dice_set()
-    socket.emit('<roll',roll);
-    socket.to(registeredSockets[player].id).emit('<roll',roll);      
+    let score = Game.analyse_score([...roll])
+    socket.broadcast.emit('<roll',roll,score);
+    socket.emit('<roll',roll,score);      
   });
 
 
