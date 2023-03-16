@@ -76,6 +76,7 @@ body{
     justify-content: space-between;
     align-items: center;
     gap: 60px;
+    cursor: pointer;
 }
 
 .button-roll, .button-collect{
@@ -102,6 +103,14 @@ body{
 .button-roll-desktop{
     display: none;
 }
+.card{
+    align-content: center;
+    flex-wrap: wrap;
+}
+.center{
+    display: flex !important;
+    justify-content: center;
+}
 @media (min-width:991px){
     .container-player{
         flex-direction: row;
@@ -109,7 +118,6 @@ body{
         padding: 0 48;
     }
     .card {
-        position: absolute;
         top: 27%;
         left: 20%;
     }
@@ -122,9 +130,6 @@ body{
     .player{
         width: 45%;
         flex-direction: column;
-    }
-    .button {
-        display: none;
     }
     button.button-collect-desktop {
         position: relative;

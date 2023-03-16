@@ -4,6 +4,8 @@
  */
 const prompt=require("prompt-sync")({sigint:true});  
 
+////////////////////////////  Class  //////////////////////////////
+
 class FarkleGame {
 // ----------------------< Game rules constants >-----------------------------------------------------------------------
 // Rules can be parametrized by this globals constants
@@ -27,9 +29,10 @@ class FarkleGame {
         this.ACE_BONUS_MULTIPLIER = 1000; // Special multiplier for aces bonus
 
         this.DEFAULT_DICES_NB = 5; // Number of dices by default in the set
-    }
+        this.current_player=''
+      }
 
-    roll_dice_set(nb_dice_to_roll) {
+    roll_dice_set(nb_dice_to_roll=null) {
         /** Generate the occurrence list of dice value for nb_dice_to_roll throw
         :parameters nb_dice_to_roll the number of dice to throw
         :return: occurrence list of dice value
@@ -37,7 +40,7 @@ class FarkleGame {
 
         const dice_value_occurrence = new Array(this.NB_DICE_SIDE).fill(0);
         let dice_index = 0;
-        while (dice_index < nb_dice_to_roll) {
+        while (dice_index < (nb_dice_to_roll??this.DEFAULT_DICES_NB)) {
             const dice_value = Math.floor(Math.random() * this.NB_DICE_SIDE + 1);
             dice_value_occurrence[dice_value - 1] += 1;
             dice_index += 1;
@@ -122,14 +125,17 @@ class FarkleGame {
             'scoring_dice': scoring_dice_value_occurrence,
             'non_scoring_dice': non_scoring_dice_from_std
         };
-    }  
+    }
+    set_current_player(nickname){
+      this.current_player=nickname
+    }
+
+    get_current_player(){
+      return this.current_player
+    }
 }
 
-function sum(array)
-{
-    return array.reduce(function (a, b) { return a + b; }, 0)
-}
-
+////////////////////////////  Variables global   //////////////////////////////
 
 let app = require('express')
 let express = app()
@@ -138,6 +144,14 @@ let fs = require('fs').promises;
 var ent = require('ent');
 var encode = require('ent/encode');
 var decode = require('ent/decode');
+let socketServer = require('socket.io')(http);
+let registeredSockets = {};
+let acceptMessagesBy = {};
+const Game=new FarkleGame();
+
+
+////////////////////////////   socket/serveur   //////////////////////////////
+
 express.use(app.static('public'));
 
 express.get('/', (request, response) => {
@@ -170,38 +184,13 @@ express.get('/client.js', (request, response) => {
     });
 });
 
-/*
- * Binds a socket server to the current HTTP server
- *
- */
-let socketServer = require('socket.io')(http);
-let registeredSockets = {};
-let acceptMessagesBy = {};
-let Game=new FarkleGame();
 
-// Registers an event listener ('connection' event)
+
+
+////////////////////////////  Registers event listener  //////////////////////////////
+
 socketServer.on('connection', (socket) => {
   console.log('A new user is connected...');
-
-  
-
-
-  /*
-   * Registers an event listener
-   *
-   * - The first parameter is the event name
-   * - The second parameter is a callback function that processes
-   *   the message content.
-   *
-  socket.on('hello', (content) => {
-    console.log(content + ' says hello!');
-
-    // Pushes an event to all the connected clients
-    socketServer.emit('notification', content + ' says hello!');
-
-    // Pushes an event to the client related to the socket object
-    socket.emit('hello', 'Hi ' + content + ', wassup mate?');
-  });*/
 
   socket.on('>signin', (nickname) => {
       if (isAvaible(nickname) == true ) {
@@ -215,16 +204,23 @@ socketServer.on('connection', (socket) => {
           let list = [];
           for(let key in registeredSockets)
           {
-            list.push({name : getNicknameBy(registeredSockets[key])});
+            list.push({name : getNicknameBy(registeredSockets[key]), current:false});
           }
           socketServer.emit('<users', list);
           console.log(Object.keys(registeredSockets).length)
           if(Object.keys(registeredSockets).length==2)
           {
+            Game.set_current_player(list[0].name)
+            console.log(Game.get_current_player())
+            list = list.map((player)=>{
+              player.current = (player.name==Game.get_current_player())
+              return player
+            })
             console.log("il y a 2 joeur on lance le jeu")
             socket.broadcast.emit('<play' );
             socket.emit('<play' );
-            socket.to(registeredSockets[list[0].name].id).emit('<urTurn');
+            socket.emit('<Turn',list);
+            socket.broadcast.emit('<Turn',list);
           }
         }else {
           socket.emit('<error', 'room full');
@@ -235,7 +231,10 @@ socketServer.on('connection', (socket) => {
       }
   });
 
-  socket.on('>message',(content) =>{
+  socket.on('>roll',(player) =>{
+    let roll=Game.roll_dice_set()
+    socket.emit('<roll',roll);
+    socket.to(registeredSockets[player].id).emit('<roll',roll);      
   });
 
 
@@ -252,6 +251,9 @@ socketServer.on('connection', (socket) => {
     }
   });
 });
+
+
+////////////////////////////  Fonctions  //////////////////////////////
 
 function isAvaible(nickname) {
   var bool = true;
@@ -278,5 +280,12 @@ function getAllNicknames(){
   }
   return list;
 }
+
+function sum(array)
+{
+    return array.reduce(function (a, b) { return a + b; }, 0)
+}
+
 // Server listens on port 8080
+
 http.listen(8080);

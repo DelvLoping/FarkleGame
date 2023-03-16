@@ -63,11 +63,7 @@
 
   <div class="container hidden">
 
-    <div class="columns">
-
-      <div class="column col-10">
-
-        
+    <div class="row">
         <div id="dialog">
 
           
@@ -85,14 +81,14 @@
           </form>
 
           <div id="display" class=" col p-2 mt-2">
-           <div class="row"> 
+           <div class="col-1 col-ml-auto"> 
             <p>
           <img src="img/bx_exitexit.png" alt="">
       </p></div>
       
-      <div class="container2 col-2">
-          <div class="container2-player">
-              <div class="table">
+      <div class="container2">
+          <div class="container2-player columns">
+              <div class="table column col-auto">
                   <table class="table-score">
                       <thead class="table-line">
                           <tr>
@@ -120,12 +116,11 @@
                       </tbody>
   
                   </table>
-                  <button class="button-collect-desktop button-collect" type="button">COLLECTER</button>
               </div>
               
       
-              <div class="player">
-                  <div class="player-information1">
+              <div class="player column col-4 col-ml-auto">
+                  <div class="player-information1 flex-centered">
                       <div class="player-information-img">
                           <img src="/img/l_essentiel.jpeg" alt="">
                       </div>
@@ -135,7 +130,7 @@
                           <span class="score">0</span>
                       </div>
                   </div>
-                  <div class="player-information2">
+                  <div class="player-information2 flex-centered">
                       <div class="player-information-img">
                           <img src="/img/l_essentiel.jpeg" alt="">
                       </div>
@@ -145,19 +140,26 @@
                           <span class="score">0</span>
                       </div>
                   </div>
-                  <button class="button-roll button-roll-desktop" type="button">LANCER</button>
-  
+
+                  
               </div>
               
           </div>
       </div>
-      <div class="die row">
-          <img src="./img/Vectorexit2.png" alt="">
-          <img src="./img/Vectorexit2.png" alt="">
-          <img src="./img/Vectorexit2.png" alt="">
-          <img src="./img/Vectorexit2.png" alt="">
-          <img src="./img/Vectorexit2.png" alt="">
+      <br>
+      <div class="container m-2" id="infoGame">
+        <div class="toast text-bold text-dark bg-secondary center d-none"></div>
       </div>
+      
+      <br>
+      <div class="die m-2">
+          <img id="dice1" src="./img/Vectorexit1.png" alt="">
+          <img id="dice2" src="./img/Vectorexit2.png" alt="">
+          <img id="dice3" src="./img/Vectorexit3.png" alt="">
+          <img id="dice4" src="./img/Vectorexit4.png" alt="">
+          <img id="dice5" src="./img/Vectorexit5.png" alt="">
+      </div>
+      <br>
       <div class="card">
           <div class="card-zone-distribution">
               <div class="card-zone"></div>
@@ -194,25 +196,15 @@
               <div class="card-zone"></div>
           </div>
       </div>
-      <div class="button">
-          <button class="button-collect" type="button">COLLECTER</button>
-          <button class="button-roll" type="button">LANCER</button>
+      <div class="columns m-2">
+          <button class="btn button-collect d-none col-2 col-mr-auto">COLLECTER</button>
+          <button class="btn button-roll d-none col-2 col-ml-auto">LANCER</button>
       </div>
           </div>
 
         </div>
-      </div>
 
-      <div class="column col-2">
-        <div id="user">
-          <table class="table">
-            <thead id="thead" style="font-style:bold">
-            </thead>
-            <tbody id="tbody">
-            </tbody>
-          </table>
-        </div>
-      </div>
+
 
     </div>
 
