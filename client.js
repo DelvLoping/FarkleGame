@@ -450,7 +450,11 @@ socketClient.on('<collect',(turn) =>{
 
 
 socketClient.on('<Win',(winner) =>{
-  afficheInInfoGame(`${winner} gagne la partie`,true)
+  if(nickname===winner){
+    afficheInInfoGame(`Vous avez gagné la partie`,true)
+  }else{
+    afficheInInfoGame(`${winner} gagne la partie`,true)
+  }
   infoGame.classList.add("bg-secondary")
   infoGame.classList.add("bg-success")
   turnScore=[]
