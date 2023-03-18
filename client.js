@@ -26,7 +26,10 @@ let infoGame = document.querySelector("#infoGame").querySelector(".toast")
 let currentPlayer = ''
 let selectDiceBoard = document.querySelector(".card-zone-distribution")
 let scoreTemp = document.querySelector("#scoreTemp").querySelector(".toast")
-
+let turnScore = []
+let fixedDice = []
+let fixedScore = 0
+let tabScore= document.querySelector('.table-score')
 ////////////////////////////  Fonctions  //////////////////////////////
 
 function generateRandomInt(min,max){
@@ -35,6 +38,7 @@ function generateRandomInt(min,max){
 
 function generateRandomIntWithout(min,max,notThisNumber){
   let number = generateRandomInt(min,max)
+  console.log(number)
   if(notThisNumber.includes(number)){
     number=generateRandomIntWithout(min,max,notThisNumber)
   }
@@ -68,11 +72,21 @@ function setDiceNumber(idDice,number){
   dices[idDice].setAttribute("value", number)
 }
 
+function getDiceAlreadySet(){
+  let roll = [...dices]
+  return roll.map((dice,id)=>{
+    if(dice.classList.contains('selected')){
+      return id
+    }
+  }).filter((id) => id !== undefined)
+}
+
 function setDicesFromRoll(roll){
-  let nbDiceRestant=roll.reduce((a, b) => a + b, 0)
-  let diceAlreadySet = []
+  let nbDiceRestant=roll.length-1
+  let diceAlreadySet = getDiceAlreadySet()
   roll.map((number,id)=>{
     while(number>0){
+      console.log(roll,diceAlreadySet,nbDiceRestant)
       idDice=generateRandomIntWithout(0,nbDiceRestant,diceAlreadySet)
       diceAlreadySet.push(idDice)
       setDiceNumber(idDice,id+1)
@@ -134,7 +148,6 @@ function changeLayoutOnTurn(bool){
 function addDiceToSelectBoard(dice){
   let index=0
   while (index<selectDiceBoard.children.length){
-    console.log(selectDiceBoard.children[index])
     if(selectDiceBoard.children[index].innerHTML=="")
     {
       selectDiceBoard.children[index].appendChild(dice)
@@ -143,16 +156,84 @@ function addDiceToSelectBoard(dice){
       index+=1
     }
   }
+  if(selectDiceBoard.children.length===5){
+    rolltBtn.disabled=true
+  }
+  let roll=calculeScoreSelected(true)
+  emitAnalyseScore(roll)
 
 }
 
 function removeDiceToSelectBoard(dice){
   dice.classList.remove('selected')
   selectDiceBoard.querySelector(`#${dice.id}`).parentNode.innerHTML = ''
+  let roll=calculeScoreSelected(true)
+  emitAnalyseScore(roll)
 
 }
 
+function emitAnalyseScore(roll){
+  console.log(roll)
+  socketClient.emit('>analyseScore',roll)
+}
 
+function calculeScoreSelected(fixed=false){
+  let roll = new Array(6).fill(0)
+  let index=0
+  while (index<selectDiceBoard.children.length){
+     if (selectDiceBoard.children[index].innerHTML !== "" && (!fixed || !fixedDice.includes(selectDiceBoard.children[index].firstChild.id))) {
+      let indexDice=parseInt(selectDiceBoard.children[index].firstChild.getAttribute("value"))-1
+      roll[indexDice]+=1
+    }
+    index+=1
+  }
+  return roll
+}
+
+function afficheInInfoGame(text,save=false){
+  console.log(text)
+  infoGame.textContent=text
+  if(save){
+    infoGame.setAttribute("saveTurn",text)
+  }
+  
+}
+
+function getSaveInfoGame(){
+  return infoGame.getAttribute("saveTurn")
+}
+
+function sum(array)
+{
+    return array.reduce(function (a, b) { return a + b; }, 0)
+}
+
+function clearBoard(){
+  let index=0
+  while (index<selectDiceBoard.children.length){
+    if(selectDiceBoard.children[index].innerHTML!==""){
+      selectDiceBoard.children[index].innerHTML=""
+    }
+    index+=1
+  }
+  dices.map((dice)=>{dice.classList.remove("selected")})
+}
+
+function clearCounter(){
+  scoreTemp.innerHTML=0
+}
+
+function setFixedDice(){
+  dices.map((dice)=>{
+    if(dice.classList.contains('selected')){
+      fixedDice.push(dice.id)
+    }
+  })
+}
+
+function setFixedScore(){
+  fixedScore=parseInt(scoreTemp.textContent)
+}
 
 ////////////////////////////  Ecouteur du client //////////////////////////////
 
@@ -167,22 +248,49 @@ signin.addEventListener("submit", (event) => {
 rolltBtn.addEventListener('click',(event) => {
   console.log('test clique')
   loadButton(true)
-  socketClient.emit('>roll',nickname)
+  let scored = calculeScoreSelected()
+  let sumScored = sum(scored)
+  let nbDice = (scored.length-1) - sumScored
+  if(sumScored===0){
+    scored=null
+  }
+  console.log(scored,nbDice,sumScored)
+  setFixedDice()
+  setFixedScore()
+  socketClient.emit('>roll',nickname,nbDice,scored)
+});
+
+collectBtn.addEventListener('click',(event) => {
+  console.log('test clique collect ')
+  socketClient.emit('>collect')
 });
 
 dices.map((dice)=>{
   dice.addEventListener('click',(event) => {
-    dice.classList.toggle('selected')
-    if(dice.classList.contains('selected'))
-    {
-      let diceClone =dice.cloneNode(true)
-      diceClone.addEventListener('click',(event) => {
-        removeDiceToSelectBoard(dice)
-      });
-      addDiceToSelectBoard(diceClone)
-    }else{
-      removeDiceToSelectBoard(dice)
+    console.log(turnScore)
+    if(turnScore.length>0){
+      console.log(turnScore[dice.getAttribute("value")-1],turnScore[dice.getAttribute("value")-1]!==0)
+      if(turnScore[dice.getAttribute("value")-1]!==0){
+        dice.classList.toggle('selected')
+        if(dice.classList.contains('selected'))
+        {
+          let diceClone =dice.cloneNode(true)
+          diceClone.addEventListener('click',(event) => {
+            removeDiceToSelectBoard(dice)
+          });
+          addDiceToSelectBoard(diceClone)
+        }else{
+          removeDiceToSelectBoard(dice)
+        }
+      }else{
+        let saveHelperText = getSaveInfoGame()
+        afficheInInfoGame(`${dice.getAttribute("value")} n'a pas scoré de points`)
+        setTimeout(function() {
+          afficheInInfoGame(saveHelperText);
+        }, 5000);
+      }
     }
+    
   
   });
 });
@@ -232,28 +340,54 @@ socketClient.on('<error',(nickname) =>{
   divError.classList.remove('hidden');
 });
 
-socketClient.on('<roll',(roll,score) =>{
-  console.log(roll,score)
+socketClient.on('<roll',(roll,score,currentRoll) =>{
+  console.log(roll,score,currentRoll)
   let promises=[]
     dices.map((dice)=>{
-      let random =generateRandomInt(6,10)
-      promises.push(asyncRollDice(random,dice))
+      if(!dice.classList.contains("selected"))
+      {
+        let random =generateRandomInt(6,10)
+        promises.push(asyncRollDice(random,dice))
+      }
     })
     Promise.all(promises).then((res)=>{
-      dices=res
       loadButton(false)
       setDicesFromRoll(roll)
-      // playerBoard.querySelector(`#${currentPlayer.name}`).querySelector(".score").textContent=score.score
-      scoreTemp.textContent=score.score
-      let helperText='Vos possibilités : '
-      score.scoring_dice.map((dice,index)=>{
-        if(dice>0){
-          helperText+=new Array(dice).fill(index+1).join('-')+" "
+      console.log(currentPlayer,nickname)
+      if(currentPlayer.name===nickname)
+      {
+        if(turnScore.length>0){
+          rolltBtn.disabled=true
+          collectBtn.disabled=true
         }
-      })
-      infoGame.textContent=helperText
+        let helperText='Vos possibilités : '
+        turnScore=score.scoring_dice
+        score.scoring_dice.map((dice,index)=>{
+          if(dice>0){
+            helperText+=new Array(dice).fill(index+1).join('-')+" "
+          }
+        })
+        afficheInInfoGame(helperText,true)
+        
+      }else{
+        if(currentRoll){
+          setDicesFromRoll(currentRoll)
+        }
+      }
     })
 });
+
+socketClient.on('<analyseScore',(score) =>{
+  console.log(score)
+  scoreTemp.textContent=fixedScore+parseInt(score.score)
+  if(score.score>0){
+    rolltBtn.disabled=false
+    collectBtn.disabled=false
+  }else{
+    rolltBtn.disabled=true
+  }
+});
+
 
 
 socketClient.on('<users',(liste) =>{
@@ -270,7 +404,7 @@ socketClient.on('<users',(liste) =>{
 socketClient.on('<play',() =>{
   console.log("play")
   taleauScore.querySelector("tbody").innerHTML=""
-  infoGame.textContent="Lancement du jeu"
+  afficheInInfoGame("Lancement du jeu")
   infoGame.classList.remove("d-none")
 });
 
@@ -281,13 +415,48 @@ socketClient.on('<Turn',(players) =>{
   changeCurrentPlayer(players)
   currentPlayer=players[idCurrent]
   changeLayoutOnTurn(players[id].current)
+  clearBoard()
+  clearCounter()
+  turnScore=[]
+  fixedDice=[]
+  rolltBtn.disabled=false
   if(players[id].current){
     console.log("myturn")
-    infoGame.textContent="C'est votre tour"
+    afficheInInfoGame("C'est votre tour",true)
   }else{
     console.log(players[1-id].name+" turn")
-    infoGame.textContent=`Tour de ${players[1-id].name}`
+    afficheInInfoGame(`Tour de ${players[1-id].name}`,true)
   }
   
+});
+
+socketClient.on('<collect',(turn) =>{
+  console.log(turn)
+  let score = playerBoard.querySelector(`#${turn.player}`).querySelector(".player-information-score").querySelector('.score')
+  score.innerHTML=parseInt(score.innerHTML)+turn.score
+
+  if(nickname===turn.player){
+    let tbody = tabScore.querySelector('tbody')
+    let tr = document.createElement('tr');
+    let thTurn = document.createElement('th');
+    thTurn.innerHTML=tbody.children.length+1
+    let thScore = document.createElement('th');
+    thScore.innerHTML=turn.score
+    tr.appendChild(thTurn)
+    tr.appendChild(thScore)
+    tbody.appendChild(tr)
+  }
+});
+
+
+socketClient.on('<Win',(winner) =>{
+  afficheInInfoGame(`${winner} gagne la partie`,true)
+  infoGame.classList.add("bg-secondary")
+  infoGame.classList.add("bg-success")
+  turnScore=[]
+  fixedDice=[]
+  clearBoard()
+  clearCounter()
+  changeLayoutOnTurn(false)
 });
 

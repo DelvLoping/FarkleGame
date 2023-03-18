@@ -27,10 +27,151 @@ class FarkleGame {
         this.THRESHOLD_BONUS = 3; // Threshold of the triggering for bonus in term of occurrence of the same slide value
         this.STD_BONUS_MULTIPLIER = 100; // Standard multiplier for bonus
         this.ACE_BONUS_MULTIPLIER = 1000; // Special multiplier for aces bonus
+        this.WIN = 10000;
 
         this.DEFAULT_DICES_NB = 5; // Number of dices by default in the set
         this.current_player=''
+        this.player1=''
+        this.player2=''
+        this.score = {};
+        this.turn=[]
+        this.winner=''
+        this.roll={}
+
+
+    }
+
+    initialize_game(player1,player2){
+      this.player1=player1
+      this.player2=player2
+      this.score = {
+        [player1]: [],
+        [player2]: []
+      };
+      this.roll = {
+        [player1]: [],
+        [player2]: []
+      };
+      this.winner=''
+      this.turn=[]
+      this.current_player=''
+    }
+
+    start(){
+      this.current_player=this.player1
+    }
+
+    roll_turn(nbDice=null){
+      console.log("bjr")
+      let roll = this.roll_dice_set(nbDice)
+      this.roll[this.player1]=roll
+      this.score[this.current_player].push({"roll":roll,"score":this.analyse_score([...roll])})
+      let taille_score_current_player = this.score[this.current_player].length-1
+      if(this.score[this.current_player][taille_score_current_player].score.score===0){
+        this.change_turn(0)
       }
+    }
+
+    change_turn(score){
+      this.turn.push({"player":this.current_player,"score":score})
+      this.score = {
+        [this.player1]: [],
+        [this.player2]: []
+      };
+      this.is_winner()
+      let new_current_player=this.player1
+      if(this.current_player===this.player1)
+      {
+        new_current_player=this.player2        
+      }
+      this.current_player=new_current_player
+    }
+
+    collect(){
+      console.log(this.score[this.current_player])
+      let score_collected=this.score[this.current_player].reduce(function (a, b) { 
+         return a + b.score.score; 
+      }, 0)
+      console.log(score_collected)
+      this.change_turn(score_collected)
+    }
+
+    set_current_player(nickname){
+      this.current_player=nickname
+    }
+
+    get_current_player(){
+      return this.current_player
+    }
+
+    get_current_player_last_score(){
+      return this.get_player_last_score(this.current_player)
+    }
+
+    get_player_last_score(nickname){
+      let last = this.score[nickname].length-1
+      return this.score[nickname][last]
+    }
+
+    get_current_player_score(){
+      return this.get_player_score(this.current_player)
+    }
+
+    get_player_score(nickname){
+      return this.score[nickname]
+    }
+
+    set_player_last_score(nickname,roll){
+      let last = this.score[nickname].length-1
+      console.log(this.score[nickname][last])
+      return this.score[nickname][last]=roll
+    }
+
+    get_turn(){
+      return this.turn
+    }
+
+    get_last_turn(){
+      let last = this.turn.length-1
+      return this.turn[last]
+    }
+
+    get_player_turn(player){
+      return this.turn.filter((turn)=>{
+        if(turn.player===player){
+          return turn
+        }
+      })
+    }
+
+    get_current_player_turn(){
+      return this.get_player_turn(this.current_player)
+    }
+
+    get_player_roll(player){
+      return this.roll[player]
+    }
+
+    is_winner(){
+      let player_score={
+        [this.player1]: 0,
+        [this.player2]: 0
+      }
+      
+      this.turn.map((turn)=>{
+        player_score[turn.player]+=turn.score
+      })
+      if(player_score[this.player1]>=this.WIN){
+        this.winner=this.player1
+      }
+      if(player_score[this.player2]>=this.WIN){
+        this.winner=this.player2
+      }
+    }
+
+    get_winner(){
+      return this.winner
+    }
 
     roll_dice_set(nb_dice_to_roll=null) {
         /** Generate the occurrence list of dice value for nb_dice_to_roll throw
@@ -126,13 +267,7 @@ class FarkleGame {
             'non_scoring_dice': non_scoring_dice_from_std
         };
     }
-    set_current_player(nickname){
-      this.current_player=nickname
-    }
 
-    get_current_player(){
-      return this.current_player
-    }
 }
 
 ////////////////////////////  Variables global   //////////////////////////////
@@ -211,7 +346,8 @@ socketServer.on('connection', (socket) => {
           console.log(Object.keys(registeredSockets).length)
           if(Object.keys(registeredSockets).length==2)
           {
-            Game.set_current_player(list[0].name)
+            Game.initialize_game(...list.map((player)=>player.name))
+            Game.start()
             console.log(Game.get_current_player())
             list = list.map((player)=>{
               player.current = (player.name==Game.get_current_player())
@@ -232,11 +368,80 @@ socketServer.on('connection', (socket) => {
       }
   });
 
-  socket.on('>roll',(player) =>{
-    let roll=Game.roll_dice_set()
+  socket.on('>roll',(player,nbDice,currentRoll) =>{
+    //check currentroll
+    console.log("currentroll",currentRoll)
+    let currentPlayer=Game.get_current_player()
+    if(currentRoll){
+      let currentRollSave= Game.get_player_last_score(currentPlayer)
+      let isModify=false
+      currentRoll.map((dice,index)=>{
+        if(dice>currentRollSave?.roll[index])
+        {
+          isModify=true
+        }
+      })
+      if(isModify){
+        //vire le joueur sale tricheur
+      }else{
+        if(currentRoll!==currentRollSave?.roll)
+        {
+          console.log(currentRoll)
+          console.log("change",Game.get_current_player_score())
+          Game.set_player_last_score(currentPlayer,{"roll":[...currentRoll],"score":Game.analyse_score([...currentRoll])})
+          console.log("change",Game.get_current_player_score())
+        }
+        
+      }
+    }
+    let currentPlayerBefore = Game.get_current_player()
+    Game.roll_turn(nbDice)
+    let currentPlayerAfter = Game.get_current_player()
+    let lastRoll =Game.get_player_roll(currentPlayer)
+    let score={roll:lastRoll,score:{score:0,non_scoring_dice:lastRoll,scoring_dice:new Array(lastRoll.length).fill(0)}}
+    if(currentPlayerBefore===currentPlayerAfter){
+      score = Game.get_player_last_score(currentPlayer)
+    }
+    if(currentRoll){
+      currentRoll.map((dice,index)=>dice+=score.roll[index])
+    }
+    socket.emit('<roll',score.roll,score.score,currentRoll);
+    socket.broadcast.emit('<roll',score.roll,score.score,currentRoll);
+    if(score.score.score===0){
+      let list = [];
+      for(let key in registeredSockets)
+      {
+        list.push({name : getNicknameBy(registeredSockets[key]),current:getNicknameBy(registeredSockets[key])===Game.get_current_player()});
+      }
+      socket.emit('<Turn',list);
+      socket.broadcast.emit('<Turn',list);
+    }
+  });
+
+  socket.on('>collect',() =>{
+    Game.collect()
+    let list = [];
+    let lastTurn = Game.get_last_turn()
+    socket.emit('<collect',lastTurn)
+    socket.broadcast.emit('<collect',lastTurn);
+    let winner = Game.get_winner()
+    console.log("winner",winner)
+    if(winner!==''){
+      socket.emit('<Win',winner);
+      socket.broadcast.emit('<Win',winner); 
+    }else{
+      for(let key in registeredSockets)
+      {
+        list.push({name : getNicknameBy(registeredSockets[key]),current:getNicknameBy(registeredSockets[key])===Game.get_current_player()});
+      }
+      socket.emit('<Turn',list);
+      socket.broadcast.emit('<Turn',list);
+    }
+  });
+
+  socket.on('>analyseScore',(roll) =>{
     let score = Game.analyse_score([...roll])
-    socket.broadcast.emit('<roll',roll,score);
-    socket.emit('<roll',roll,score);      
+    socket.emit('<analyseScore',score);      
   });
 
 

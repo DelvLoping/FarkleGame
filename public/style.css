@@ -118,6 +118,9 @@ body{
     border: 2px solid #32b643;
     border-radius: 8px 8px 8px 8px;
 }
+.die .selected{
+    opacity:50%
+}
 @media (min-width:991px){
     .container-player{
         flex-direction: row;
