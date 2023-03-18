@@ -121,6 +121,10 @@ body{
 .die .selected{
     opacity:50%
 }
+.scoretab{
+    height: 100vh;
+    overflow: auto;
+}
 @media (min-width:991px){
     .container-player{
         flex-direction: row;

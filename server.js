@@ -62,7 +62,6 @@ class FarkleGame {
     }
 
     roll_turn(nbDice=null){
-      console.log("bjr")
       let roll = this.roll_dice_set(nbDice)
       this.roll[this.player1]=roll
       this.score[this.current_player].push({"roll":roll,"score":this.analyse_score([...roll])})
@@ -88,11 +87,9 @@ class FarkleGame {
     }
 
     collect(){
-      console.log(this.score[this.current_player])
       let score_collected=this.score[this.current_player].reduce(function (a, b) { 
          return a + b.score.score; 
       }, 0)
-      console.log(score_collected)
       this.change_turn(score_collected)
     }
 
@@ -123,7 +120,6 @@ class FarkleGame {
 
     set_player_last_score(nickname,roll){
       let last = this.score[nickname].length-1
-      console.log(this.score[nickname][last])
       return this.score[nickname][last]=roll
     }
 
@@ -334,21 +330,17 @@ socketServer.on('connection', (socket) => {
         {
           registeredSockets[nickname] = socket;
           scoreHistory[nickname] = {};
-          // console.log(nickname + ' est connecté');
           socket.emit('<connected', nickname);
-          // socket.broadcast.emit('<notification', nickname + " à rejoins le chat");
           let list = [];
           for(let key in registeredSockets)
           {
             list.push({name : getNicknameBy(registeredSockets[key]), current:false});
           }
           socketServer.emit('<users', list);
-          console.log(Object.keys(registeredSockets).length)
           if(Object.keys(registeredSockets).length==2)
           {
             Game.initialize_game(...list.map((player)=>player.name))
             Game.start()
-            console.log(Game.get_current_player())
             list = list.map((player)=>{
               player.current = (player.name==Game.get_current_player())
               return player
@@ -369,8 +361,6 @@ socketServer.on('connection', (socket) => {
   });
 
   socket.on('>roll',(player,nbDice,currentRoll) =>{
-    //check currentroll
-    console.log("currentroll",currentRoll)
     let currentPlayer=Game.get_current_player()
     if(currentRoll){
       let currentRollSave= Game.get_player_last_score(currentPlayer)
@@ -386,10 +376,7 @@ socketServer.on('connection', (socket) => {
       }else{
         if(currentRoll!==currentRollSave?.roll)
         {
-          console.log(currentRoll)
-          console.log("change",Game.get_current_player_score())
           Game.set_player_last_score(currentPlayer,{"roll":[...currentRoll],"score":Game.analyse_score([...currentRoll])})
-          console.log("change",Game.get_current_player_score())
         }
         
       }
@@ -413,6 +400,9 @@ socketServer.on('connection', (socket) => {
       {
         list.push({name : getNicknameBy(registeredSockets[key]),current:getNicknameBy(registeredSockets[key])===Game.get_current_player()});
       }
+      let lastTurn = Game.get_last_turn()
+      socket.emit('<collect',lastTurn)
+      socket.broadcast.emit('<collect',lastTurn);
       socket.emit('<Turn',list);
       socket.broadcast.emit('<Turn',list);
     }
@@ -425,7 +415,6 @@ socketServer.on('connection', (socket) => {
     socket.emit('<collect',lastTurn)
     socket.broadcast.emit('<collect',lastTurn);
     let winner = Game.get_winner()
-    console.log("winner",winner)
     if(winner!==''){
       socket.emit('<Win',winner);
       socket.broadcast.emit('<Win',winner); 

@@ -8,7 +8,6 @@
 let display = document.querySelector('div#display');
 let modal = document.querySelector('div.modal-md');
 let users = document.querySelector('div#user');
-let taleauScore = document.querySelector(".container2")
 let dice1 = document.querySelector("#dice1")
 let dice2 = document.querySelector("#dice2")
 let dice3 = document.querySelector("#dice3")
@@ -403,7 +402,7 @@ socketClient.on('<users',(liste) =>{
 
 socketClient.on('<play',() =>{
   console.log("play")
-  taleauScore.querySelector("tbody").innerHTML=""
+  tabScore.querySelector("tbody").innerHTML=""
   afficheInInfoGame("Lancement du jeu")
   infoGame.classList.remove("d-none")
 });
